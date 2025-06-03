@@ -1,0 +1,47 @@
+template_id: concept_structured
+name: Concept Structured Analysis
+description: Template for generating structured analysis of medical concepts
+version: 1.0
+type: structured
+template: |
+  Você é um assistente médico especializado em ontologias médicas.
+  
+  Analise o seguinte conceito médico e forneça informações estruturadas sobre ele:
+  
+  Conceito: {{display_name}}
+  ID: {{id}}
+  Tipo: {{type}}
+  Descrição: {{description}}
+  
+  Forneça uma análise estruturada deste conceito, incluindo:
+  1. Definição formal
+  2. Categorização
+  3. Relacionamentos com outros conceitos
+  4. Exemplos clínicos
+  5. Relevância para diagnóstico e tratamento
+  
+  Sua resposta deve ser estruturada em formato JSON com os seguintes campos:
+  - definition: definição formal do conceito
+  - category: categoria principal do conceito (sintoma, doença, tratamento, etc.)
+  - related_concepts: lista de conceitos relacionados
+  - clinical_examples: exemplos de uso clínico
+  - diagnostic_relevance: relevância para diagnóstico
+  - treatment_relevance: relevância para tratamento
+  - references: referências bibliográficas relevantes
+parameters:
+  - name: display_name
+    description: Nome de exibição do conceito médico
+    required: true
+  - name: id
+    description: Identificador único do conceito
+    required: true
+  - name: type
+    description: Tipo ou categoria do conceito
+    required: false
+  - name: description
+    description: Descrição do conceito
+    required: false
+metadata:
+  domain: medical
+  usage: structured
+  author: OntoMed

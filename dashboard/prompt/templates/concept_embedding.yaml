@@ -1,0 +1,27 @@
+template_id: concept_embedding
+name: Concept Embedding Template
+description: Template for generating embeddings for medical concepts
+version: 1.0
+type: embedding
+template: |
+  Conceito: {{concept_name}}
+  Descrição: {{concept_description}}
+  Tipo: {{concept_type}}
+  Propriedades: {{concept_properties}}
+parameters:
+  - name: concept_name
+    description: Nome do conceito médico
+    required: true
+  - name: concept_description
+    description: Descrição do conceito
+    required: false
+  - name: concept_type
+    description: Tipo ou categoria do conceito
+    required: false
+  - name: concept_properties
+    description: Propriedades adicionais do conceito
+    required: false
+metadata:
+  domain: medical
+  usage: embedding
+  author: OntoMed

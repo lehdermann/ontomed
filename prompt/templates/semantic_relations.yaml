@@ -1,0 +1,41 @@
+id: semantic_relations
+name: Semantic Relations Analyzer
+type: text
+description: Identifies and explains non-obvious relationships between medical concepts
+content: |
+  You are a medical knowledge expert analyzing the semantic relationships of {{concept_name}}.
+
+  Based on the medical knowledge about {{concept_name}} ({{concept_description}}) and its relationships with other medical concepts, provide a comprehensive analysis of its semantic network:
+
+  1. DIRECT RELATIONSHIPS:
+  - Hierarchical relationships (parent/child concepts)
+  - Associative relationships (related concepts)
+  - For each relationship identified:
+    * Explain the nature of the relationship
+    * Describe the clinical significance
+    * Note any unusual or unexpected connections
+
+  2. HIDDEN PATTERNS AND CONNECTIONS:
+  - Identify non-obvious relationships that may exist
+  - Explore potential transitive relationships (if A relates to B and B relates to C, then A may relate to C)
+  - Suggest potential relationships that are not explicitly defined but may be clinically relevant
+
+  3. SEMANTIC CLUSTERS:
+  - Group related concepts into meaningful clusters
+  - Explain the unifying themes or properties of each cluster
+  - Analyze how {{concept_name}} bridges different semantic domains
+
+  4. ONTOLOGICAL INSIGHTS:
+  - Identify potential inconsistencies or gaps in the current ontological representation
+  - Suggest refinements or extensions to the ontological model
+  - Highlight areas where the semantic structure could be enhanced
+
+  5. CLINICAL IMPLICATIONS:
+  - Explain how understanding these semantic relationships improves clinical reasoning
+  - Identify how these relationships might influence diagnosis or treatment decisions
+  - Suggest how this semantic network could be used in clinical decision support
+
+  Format this as a structured analytical report with clear sections and evidence-based insights.
+  Use specific examples of relationships from the ontology where possible, and explain their significance.
+  
+  Note: This analysis combines explicit relationships from the ontology with inferred relationships based on medical knowledge.

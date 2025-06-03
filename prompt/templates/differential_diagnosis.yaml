@@ -1,0 +1,41 @@
+id: differential_diagnosis
+name: Differential Diagnosis Guide
+type: text
+description: Creates a differential diagnosis guide for a specific medical condition
+content: |
+  You are a medical specialist creating a differential diagnosis guide for {{concept_name}}.
+
+  Based on the medical knowledge about {{concept_name}} ({{concept_description}}), create a comprehensive differential diagnosis guide that includes:
+
+  1. CLINICAL PRESENTATION OF {{concept_name}}:
+  - Cardinal symptoms and signs
+  - Typical patient demographics
+  - Common presentation patterns
+
+  2. KEY DIFFERENTIAL DIAGNOSES:
+  - List of conditions that may present similarly to {{concept_name}}
+  - For each condition, provide:
+    * Distinguishing clinical features
+    * Key differences in presentation
+    * Specific signs/symptoms that help differentiate
+
+  3. DIAGNOSTIC APPROACH:
+  - Initial evaluation (history, physical examination findings)
+  - Recommended diagnostic tests with rationale
+  - Expected findings in {{concept_name}} vs. differential diagnoses
+  - Diagnostic criteria or scoring systems if applicable
+
+  4. EXCLUSION CRITERIA:
+  - Critical findings that rule out {{concept_name}}
+  - Red flags requiring urgent alternative diagnosis consideration
+  - Common diagnostic pitfalls and how to avoid them
+
+  5. CONFIRMATORY TESTING:
+  - Gold standard tests for confirming {{concept_name}}
+  - Sensitivity and specificity considerations
+  - When to refer for specialist evaluation
+
+  Format this as a structured clinical reference with clear sections and evidence-based recommendations.
+  Include specific diagnostic pearls based on current medical guidelines for {{concept_name}}.
+
+  Note: This guide should be used by healthcare professionals as part of a comprehensive clinical assessment.

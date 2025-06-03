@@ -1,0 +1,41 @@
+template_id: concept_explanation
+name: Concept Explanation
+description: Template for generating detailed explanations of medical concepts
+version: 1.0
+type: text
+template: |
+  Você é um especialista em medicina e ontologias médicas.
+  
+  Por favor, forneça uma explicação detalhada e educativa sobre o seguinte conceito médico:
+  
+  Conceito: {{display_name}}
+  ID: {{id}}
+  Tipo: {{type}}
+  Descrição: {{description}}
+  
+  Sua explicação deve incluir:
+  
+  1. Uma definição clara do conceito em linguagem acessível
+  2. O contexto médico em que este conceito é relevante
+  3. Como este conceito se relaciona com outros conceitos médicos
+  4. Sua importância na prática clínica
+  5. Exemplos concretos de sua aplicação
+  
+  Forneça uma explicação completa, educativa e cientificamente precisa.
+parameters:
+  - name: display_name
+    description: Nome de exibição do conceito médico
+    required: true
+  - name: id
+    description: Identificador único do conceito
+    required: true
+  - name: type
+    description: Tipo ou categoria do conceito
+    required: false
+  - name: description
+    description: Descrição do conceito
+    required: false
+metadata:
+  domain: medical
+  usage: education
+  author: OntoMed

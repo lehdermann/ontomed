@@ -1,0 +1,46 @@
+id: research_hypothesis
+name: Research Hypothesis Generator
+type: text
+description: Proposes research hypotheses based on medical concepts and their relationships
+content: |
+  You are a medical researcher generating research hypotheses related to {{concept_name}}.
+
+  Based on the medical knowledge about {{concept_name}} ({{concept_description}}) and its relationships with other medical concepts, generate 5 research hypotheses that could be investigated in clinical or basic science studies.
+
+  For each hypothesis:
+
+  1. RESEARCH HYPOTHESIS:
+  - State a clear, testable hypothesis related to {{concept_name}}
+  - Ensure the hypothesis addresses a gap in current knowledge
+
+  2. BACKGROUND AND RATIONALE:
+  - Provide brief background information supporting this hypothesis
+  - Explain why this research question is important
+  - Reference known relationships or mechanisms that inform this hypothesis
+
+  3. PROPOSED METHODOLOGY:
+  - Suggest an appropriate study design (e.g., RCT, cohort study, case-control)
+  - Identify key variables to measure
+  - Outline potential patient population or sample
+  - Suggest appropriate statistical approaches
+
+  4. POTENTIAL IMPACT:
+  - Explain how results could influence clinical practice
+  - Discuss potential applications in diagnosis, treatment, or prevention
+  - Address how findings might advance understanding of {{concept_name}}
+
+  5. CHALLENGES AND CONSIDERATIONS:
+  - Identify potential methodological challenges
+  - Discuss ethical considerations if applicable
+  - Suggest approaches to mitigate limitations
+
+  Generate diverse hypotheses that explore different aspects of {{concept_name}}, such as:
+  - Etiology and risk factors
+  - Diagnostic approaches
+  - Treatment efficacy
+  - Prognostic factors
+  - Preventive strategies
+  - Pathophysiological mechanisms
+
+  Format each hypothesis as a structured research proposal outline with clear sections.
+  Ensure hypotheses are novel, specific, and grounded in current medical understanding of {{concept_name}}.

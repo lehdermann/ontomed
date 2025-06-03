@@ -1,0 +1,98 @@
+id: knowledge_graph
+name: Knowledge Graph Generator
+type: structured
+description: Creates structured representations of medical ontology subdomains
+content: |
+  You are a medical knowledge engineer creating a structured knowledge graph representation centered around {{concept_name}}.
+
+  Based on the medical knowledge about {{concept_name}} ({{concept_description}}) and its relationships with other medical concepts, generate a structured knowledge graph representation in JSON format:
+
+  Your task is to create a comprehensive knowledge graph that includes:
+
+  1. CENTRAL CONCEPT:
+  - {{concept_name}} as the central node
+  - Include all relevant attributes and properties
+
+  2. RELATED CONCEPTS:
+  - First-degree connections to {{concept_name}}
+  - Second-degree connections (connections of the connections)
+  - For each concept, include:
+    * Concept name
+    * Brief description
+    * Type/category of concept
+
+  3. RELATIONSHIPS:
+  - Define the relationships between concepts
+  - For each relationship, specify:
+    * Source concept
+    * Target concept
+    * Relationship type (e.g., "causes", "treats", "is_a", "part_of", "associated_with")
+    * Strength or confidence of relationship (if applicable)
+    * Directional or bidirectional nature
+
+  4. SUBDOMAINS:
+  - Group concepts into meaningful subdomains
+  - Identify key bridging concepts between subdomains
+  - Highlight central concepts within each subdomain
+
+  5. METADATA:
+  - Include relevant metadata for visualization
+  - Suggest appropriate visualization attributes (colors, sizes, etc.)
+  - Provide notes on interpretation of the graph
+
+  Generate this knowledge graph in the following structured JSON format:
+
+  ```json
+  {
+    "central_concept": {
+      "name": "concept_name",
+      "description": "concept_description",
+      "type": "concept_type"
+    },
+    "concepts": [
+      {
+        "id": "unique_id",
+        "name": "concept_name",
+        "description": "brief_description",
+        "type": "concept_type",
+        "subdomain": "subdomain_name"
+      }
+    ],
+    "relationships": [
+      {
+        "source": "source_concept_id",
+        "target": "target_concept_id",
+        "type": "relationship_type",
+        "strength": "value_between_0_and_1",
+        "bidirectional": true_or_false,
+        "description": "brief_description_of_relationship"
+      }
+    ],
+    "subdomains": [
+      {
+        "name": "subdomain_name",
+        "description": "subdomain_description",
+        "central_concepts": ["concept_id1", "concept_id2"]
+      }
+    ],
+    "visualization_metadata": {
+      "suggested_layout": "layout_type",
+      "concept_color_mapping": {
+        "concept_type1": "color1",
+        "concept_type2": "color2"
+      },
+      "relationship_style_mapping": {
+        "relationship_type1": "style1",
+        "relationship_type2": "style2"
+      }
+    }
+  }
+  ```
+
+  Ensure the knowledge graph is:
+  - Comprehensive but focused on the most relevant concepts
+  - Medically accurate and reflects current understanding
+  - Structured in a way that could be visualized by graph visualization tools
+  - Includes at least 15-20 related concepts and their relationships
+
+  Note: This structured representation can be used to generate interactive visualizations or to enhance the ontology.

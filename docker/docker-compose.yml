@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  blazegraph:
+    image: lyrasis/blazegraph:2.1.5
+    container_name: hmarl_blazegraph
+    ports:
+      # Mapear a porta 8080 do container para 9999 no host
+      - "9999:8080"
+    volumes:
+      # Volume para persistência de dados
+      - blazegraph_data:/data
+      - ./blazegraph.properties:/blazegraph/conf/RWStore.properties
+    environment:
+      JAVA_OPTS: "-Xms1g -Xmx2g -XX:+UseG1GC"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/blazegraph/sparql"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  blazegraph_data:
+    name: hmarl_blazegraph_data

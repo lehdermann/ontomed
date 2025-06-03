@@ -1,0 +1,100 @@
+
+
+services:
+  blazegraph:
+    build:
+      context: ./docker/blazegraph
+      dockerfile: Dockerfile
+    image: hmarl_blazegraph:latest
+    container_name: blazegraph
+    ports:
+      - "9999:8080"
+    environment:
+      BLAZEGRAPH_RW_PATH: /data
+    volumes:
+      - blazegraph_data:/data
+      - ./docker/blazegraph/blazegraph.properties:/usr/local/tomcat/conf/blazegraph.properties:ro
+      - ./docker/blazegraph/startup.sh:/usr/local/tomcat/bin/startup.sh:ro
+    networks:
+      - ontomed-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/bigdata/sparql"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: hmarl_api:latest
+    container_name: hmarl_api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: http://blazegraph:8080/bigdata
+      ONTO_MED_API_URL: http://api:8000
+      PORT: 8000
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    volumes:
+      - ./api:/app/api
+      - ./llm:/app/llm
+      - ./prompt:/app/prompt
+      - ./semantic:/app/semantic
+      - ./core:/app/core
+    depends_on:
+      blazegraph:
+        condition: service_healthy
+    command: >
+      /bin/bash -c 'while ! curl -f http://blazegraph:8080/bigdata/namespace; do sleep 1; done;
+      python server.py --host 0.0.0.0 --port 8000'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - ontomed-net
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    image: hmarl_dashboard:latest
+    container_name: hmarl_dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      ONTO_MED_API_URL: http://api:8000
+      API_KEY: ${API_KEY:-your_api_key_here}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    volumes:
+      - ./dashboard:/app
+      - ./prompt:/app/prompt
+      - ./llm:/app/llm
+      - ./api:/app/api
+      - ./semantic:/app/semantic
+      - ./core:/app/core
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://api:8000/health"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - ontomed-net
+    restart: unless-stopped
+
+networks:
+  ontomed-net:
+    driver: bridge
+
+volumes:
+  blazegraph_data:

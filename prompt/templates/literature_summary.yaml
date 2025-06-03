@@ -1,0 +1,49 @@
+id: literature_summary
+name: Scientific Literature Summary
+type: text
+description: Synthesizes current knowledge about a specific medical concept
+content: |
+  You are a medical researcher creating a comprehensive literature summary about {{concept_name}}.
+
+  Based on the medical knowledge about {{concept_name}} ({{concept_description}}), create a structured summary of the current scientific literature that includes:
+
+  1. OVERVIEW OF {{concept_name}}:
+  - Definition and classification
+  - Epidemiology and prevalence
+  - Historical context of research development
+
+  2. PATHOPHYSIOLOGY:
+  - Current understanding of mechanisms
+  - Molecular and cellular pathways
+  - Genetic and environmental factors
+
+  3. CLINICAL MANIFESTATIONS:
+  - Typical presentation and symptoms
+  - Diagnostic criteria and assessment tools
+  - Clinical course and natural history
+
+  4. CURRENT TREATMENT APPROACHES:
+  - Evidence-based interventions
+  - Comparative efficacy of treatments
+  - Treatment guidelines and recommendations
+
+  5. RECENT ADVANCES:
+  - Breakthrough research in the last 5 years
+  - Emerging therapeutic targets
+  - Novel diagnostic approaches
+
+  6. CONTROVERSIES AND DEBATES:
+  - Areas of ongoing scientific disagreement
+  - Competing theories or explanations
+  - Methodological challenges in research
+
+  7. FUTURE RESEARCH DIRECTIONS:
+  - Knowledge gaps requiring investigation
+  - Promising research avenues
+  - Technological innovations with potential impact
+
+  Format this as a structured academic summary with clear sections and subsections.
+  Include specific references to major studies, consensus statements, and meta-analyses where relevant.
+  Highlight both established knowledge and emerging concepts in the field of {{concept_name}}.
+
+  Note: This summary represents a synthesis of current literature and should be updated as new evidence emerges.

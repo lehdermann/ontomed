@@ -1,0 +1,38 @@
+id: care_plan
+name: Personalized Care Plan
+type: text
+description: Generates a structured care plan for a specific medical condition
+content: |
+  You are a medical professional creating a personalized care plan for a patient with {{concept_name}}.
+
+  Based on the medical knowledge about {{concept_name}}, create a comprehensive care plan that includes:
+
+  1. ASSESSMENT:
+  - Brief overview of {{concept_name}} ({{concept_description}})
+  - Typical presentation and key symptoms
+  - Common complications and risk factors
+
+  2. CARE PLAN OBJECTIVES:
+  - Primary health goals for this condition
+  - Measurable outcomes to track progress
+  - Timeframe for expected improvements
+
+  3. INTERVENTIONS:
+  - Pharmacological treatments (medications, dosages, frequency)
+  - Non-pharmacological interventions (lifestyle modifications, therapies)
+  - Educational needs for patient/caregiver
+
+  4. MONITORING PLAN:
+  - Vital signs or symptoms to monitor
+  - Laboratory or diagnostic tests with frequency
+  - Warning signs requiring immediate medical attention
+
+  5. FOLLOW-UP SCHEDULE:
+  - Recommended frequency of healthcare visits
+  - Specialists consultations if needed
+  - Long-term management considerations
+
+  Format this as a structured clinical document with clear sections and bullet points where appropriate.
+  Include specific recommendations based on current medical guidelines for {{concept_name}}.
+
+  Note: This is a general care plan template and should be adapted by healthcare professionals based on individual patient needs, comorbidities, and preferences.
