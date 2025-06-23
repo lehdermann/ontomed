@@ -5,6 +5,7 @@ Template manager for the OntoMed dashboard.
 import os
 import yaml
 import logging
+import streamlit as st
 from typing import Dict, Any, Optional, List
 import json
 
@@ -12,20 +13,10 @@ import json
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class Singleton(type):
-    """
-    Metaclass to implement the Singleton pattern.
-    """
-    _instances = {}
-    
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-class PromptManager(metaclass=Singleton):
+class PromptManager:
     """
     Template manager for the OntoMed dashboard.
+    Uses st.session_state to maintain state across Streamlit reruns.
     """
     
     def __init__(self, templates_dir: Optional[str] = None):
@@ -35,25 +26,34 @@ class PromptManager(metaclass=Singleton):
         Args:
             templates_dir: Directory where templates are stored
         """
-        self.templates = {}
-        
+        # Initialize in session state if not exists
+        if 'templates' not in st.session_state:
+            st.session_state.templates = {}
+            
+        if 'templates_loaded' not in st.session_state:
+            st.session_state.templates_loaded = False
+            
         if templates_dir is None:
             # Use the default directory
             self.templates_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
         else:
             self.templates_dir = templates_dir
             
-        # Load templates
-        self._load_templates()
+        # Load templates if not already loaded
+        if not st.session_state.templates_loaded:
+            self._load_templates()
+            st.session_state.templates_loaded = True
     
     def _load_templates(self) -> None:
         """
-        Load all templates from the templates directory.
+        Load all templates from the templates directory into session state.
         """
         if not os.path.exists(self.templates_dir):
             logger.warning(f"Templates directory not found: {self.templates_dir}")
             return
             
+        logger.info(f"Loading templates from: {self.templates_dir}")
+        
         for filename in os.listdir(self.templates_dir):
             if filename.endswith('.yaml') or filename.endswith('.yml'):
                 filepath = os.path.join(self.templates_dir, filename)
@@ -64,7 +64,7 @@ class PromptManager(metaclass=Singleton):
                     # Check if the template has an ID
                     template_id = template_data.get('template_id')
                     if template_id:
-                        self.templates[template_id] = template_data
+                        st.session_state.templates[template_id] = template_data
                         logger.info(f"Template loaded: {template_id}")
                     else:
                         logger.warning(f"Template without ID: {filepath}")
@@ -73,7 +73,7 @@ class PromptManager(metaclass=Singleton):
     
     def get_template(self, template_id: str) -> Optional[Dict[str, Any]]:
         """
-        Get a template by ID.
+        Get a template by ID from session state.
         
         Args:
             template_id: Template ID
@@ -81,10 +81,19 @@ class PromptManager(metaclass=Singleton):
         Returns:
             Template or None if not found
         """
-        template = self.templates.get(template_id)
+        template = st.session_state.templates.get(template_id)
         if template is None:
             logger.warning(f"Template not found: {template_id}")
         return template
+    
+    def get_templates(self) -> List[Dict[str, Any]]:
+        """
+        Get all templates from session state.
+        
+        Returns:
+            List of all templates
+        """
+        return list(st.session_state.templates.values())
     
     def fill_template(self, template_id: str, parameters: Dict[str, Any]) -> Optional[str]:
         """
@@ -123,3 +132,17 @@ class PromptManager(metaclass=Singleton):
         """
         # Return an empty list as fallback
         return []
+        
+    def generate_content(self, template_id: str, parameters: Dict[str, Any], **kwargs) -> Optional[str]:
+        """
+        Generate content by filling a template with the provided parameters.
+        
+        Args:
+            template_id: ID of the template to use
+            parameters: Parameters to fill the template
+            **kwargs: Additional parameters (ignored in this implementation)
+            
+        Returns:
+            Filled template content or None if template is not found
+        """
+        return self.fill_template(template_id, parameters)

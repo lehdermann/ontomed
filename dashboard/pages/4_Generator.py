@@ -1,32 +1,70 @@
 import os
 import sys
 import requests
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Add the project root to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 import streamlit as st
 from utils.api_client import APIClient
-from prompt.template_manager import TemplateManager
+from prompt.manager import PromptManager as TemplateManager
 from llm.factory import LLMFactory
+
+# Import shared layout components
+from components.shared_layout_new import setup_shared_layout_content, render_chat_ui, create_three_column_layout, check_rerun
+from components.chat.chat_ui_new import ChatUI
 
 # Initialize API client
 api_client = APIClient()
 
 # Initialize managers
 llm = LLMFactory.create_llm()
-template_manager = TemplateManager(llm)
 
-# Page configuration
-st.set_page_config(
-    page_title="Content Generator",
-    page_icon="📝",
-    layout="wide"
-)
+# Get shared template manager
+from utils.session_manager import get_template_manager
+template_manager = get_template_manager()
+logging.info("Using shared TemplateManager instance")
+
+# Function to handle chat messages
+def handle_user_message(message: str) -> None:
+    """Handle user message in the chat."""
+    try:
+        # Use the global API client
+        global api_client
+        
+        # Process the message using the APIClient's process_chat_message method
+        logger.info(f"Processing user message: {message}")
+        chat_response = api_client.process_chat_message(message)
+        
+        # Extract the response and identified intent
+        response_text = chat_response.get('response', "Desculpe, não consegui processar sua mensagem.")
+        intent = chat_response.get('intent', "outro")
+        
+        # Register the identified intent for debugging purposes
+        logger.info(f"Intenção identificada: {intent}")
+        
+        # Add the bot's response to the chat history
+        if 'chat_messages' in st.session_state:
+            st.session_state.chat_messages.append({"is_user": False, "content": response_text})
+        
+    except Exception as e:
+        error_msg = f"Desculpe, ocorreu um erro ao processar sua mensagem: {str(e)}"
+        if 'chat_messages' in st.session_state:
+            st.session_state.chat_messages.append({"is_user": False, "content": error_msg})
+        logger.error(f"Error handling user message: {e}", exc_info=True)
 
 def main():
     """Main function of the content generation page."""
+    # Setup shared layout
+    page = setup_shared_layout_content()
     
+    # Import the time module to use in the function scope
+    import time
     # Page title
     st.title("Content Generator")
     
@@ -50,11 +88,49 @@ def main():
     if 'selected_template' not in st.session_state:
         st.session_state.selected_template = None
     
-    # Load filtered concepts
-    with st.spinner("Loading concepts..."):
-        concepts = api_client.get_concepts(filters={"type": concept_type if concept_type != "All" else None})
-        # Store concepts in session state
-        st.session_state.concepts = concepts
+    # Initialize cache variables in session_state if they don't exist
+    if 'concepts_cache' not in st.session_state:
+        st.session_state.concepts_cache = None
+    if 'concepts_cache_timestamp' not in st.session_state:
+        st.session_state.concepts_cache_timestamp = None
+    if 'concepts_cache_filter' not in st.session_state:
+        st.session_state.concepts_cache_filter = None
+        
+    # Define cache expiration time (in seconds)
+    cache_expiration = 300  # 5 minutes
+    
+    # Get the current filter
+    current_filter = {"type": concept_type if concept_type != "All" else None}
+    
+    # Check if we have a valid cache for the current filter
+    cache_valid = False
+    if (st.session_state.concepts_cache is not None and 
+        st.session_state.concepts_cache_timestamp is not None and
+        st.session_state.concepts_cache_filter == current_filter):
+        current_time = time.time()
+        # Check if the cache is still valid (has not expired)
+        if current_time - st.session_state.concepts_cache_timestamp < cache_expiration:
+            cache_valid = True
+            
+    # Button to force cache update
+    if st.sidebar.button("Atualizar lista de conceitos"):
+        cache_valid = False
+        st.sidebar.info("Atualizando dados...")
+    
+    # Load concepts from API or cache
+    if cache_valid:
+        concepts = st.session_state.concepts_cache
+        st.sidebar.success("Dados carregados do cache")
+    else:
+        with st.spinner("Carregando conceitos da API..."):
+            concepts = api_client.get_concepts(filters=current_filter)
+            # Update the cache
+            st.session_state.concepts_cache = concepts
+            st.session_state.concepts_cache_timestamp = time.time()
+            st.session_state.concepts_cache_filter = current_filter
+    
+    # Store concepts in session state for other parts of the app
+    st.session_state.concepts = concepts
     
     # Process concepts for display
     if concepts:
@@ -127,7 +203,7 @@ def main():
         st.warning("No concepts found. Check if there is data in the database.")
         selected_concept = None
     
-    if selected_concept:
+    if selected_concept is not None:
         # Function to fix character encoding issues using Unicode normalization
         def fix_encoding(text):
             if not text:
@@ -445,33 +521,44 @@ def main():
                             unit = None
                             parent_class = None
                             
+                            # Check se selected_concept não é None antes de acessar seus atributos
+                            if selected_concept is None:
+                                st.error("Erro: Nenhum conceito selecionado. Por favor, selecione um conceito válido.")
+                                return
+                                
                             # Look for a better name in the relationships
-                            for rel in selected_concept.get("relationships", []):
-                                if rel.get("type") == "label" and rel.get("target"):
-                                    concept_name = fix_encoding(rel.get("target"))
-                                    break
+                            relationships = selected_concept.get("relationships") if selected_concept else None
+                            if relationships is not None:
+                                for rel in relationships:
+                                    if rel.get("type") == "label" and rel.get("target"):
+                                        concept_name = fix_encoding(rel.get("target"))
+                                        break
                             
                             # Extract min, max values and unit from relationships
-                            for rel in selected_concept.get("relationships", []):
-                                if rel.get("type") == "hasMinValue":
-                                    min_value = rel.get("target")
-                                elif rel.get("type") == "hasMaxValue":
-                                    max_value = rel.get("target")
-                                elif rel.get("type") == "hasDefaultUnit":
-                                    unit = rel.get("target")
-                                elif rel.get("type") == "subClassOf":
-                                    parent_class = rel.get("target")
+                            relationships = selected_concept.get("relationships") if selected_concept else None
+                            if relationships is not None:
+                                for rel in relationships:
+                                    if rel.get("type") == "hasMinValue":
+                                        min_value = rel.get("target")
+                                    elif rel.get("type") == "hasMaxValue":
+                                        max_value = rel.get("target")
+                                    elif rel.get("type") == "hasDefaultUnit":
+                                        unit = rel.get("target")
+                                    elif rel.get("type") == "subClassOf":
+                                        parent_class = rel.get("target")
                             
                             # Extract better description from relationships
                             better_description = fix_encoding(description)
-                            for rel in selected_concept.get("relationships", []):
-                                # Look for comments that might contain descriptions
-                                if rel.get("type") == "comment" and rel.get("target"):
-                                    # Check if this comment seems to be about this specific concept
-                                    target_text = rel.get("target", "").lower()
-                                    if "fever" in target_text or "temperature" in target_text or "high" in target_text:
-                                        better_description = fix_encoding(rel.get("target"))
-                                        break
+                            relationships = selected_concept.get("relationships") if selected_concept else None
+                            if relationships is not None:
+                                for rel in relationships:
+                                    # Look for comments that might contain descriptions
+                                    if rel.get("type") == "comment" and rel.get("target"):
+                                        # Check if this comment seems to be about this specific concept
+                                        target_text = rel.get("target", "").lower()
+                                        if "fever" in target_text or "temperature" in target_text or "high" in target_text:
+                                            better_description = fix_encoding(rel.get("target"))
+                                            break
                             
                             # Function to fix character encoding issues
                             def fix_encoding(text):
@@ -671,7 +758,6 @@ def main():
                                     temperature=temperature,
                                     max_tokens=max_tokens
                                 )
-                                # O aviso médico agora é parte do template, não precisamos adicioná-lo aqui
                                 # Display text response
                                 st.write(response)
                         except Exception as e:
@@ -688,6 +774,12 @@ def main():
                         st.success("Content saved successfully!")
                 except Exception as e:
                     st.error(f"Error generating content: {str(e)}")
+    
+    # Render chat UI
+    render_chat_ui()
+    
+    # Check if we need to rerun the app
+    check_rerun()
 
 if __name__ == "__main__":
     main()
