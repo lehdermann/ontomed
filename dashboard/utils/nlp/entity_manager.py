@@ -4,6 +4,7 @@ Entity management and Entity Ruler for the OntoMed.
 
 import re
 import logging
+import traceback
 from typing import List, Dict, Any, Optional, Set, Tuple
 import spacy
 from spacy.pipeline import EntityRuler
@@ -134,7 +135,6 @@ class EntityManager:
             return True
         except Exception as e:
             logger.error(f"Error adding patterns to Entity Ruler: {str(e)}")
-            import traceback
             logger.error(traceback.format_exc())
             return False
     

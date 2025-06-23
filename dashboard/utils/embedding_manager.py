@@ -5,6 +5,9 @@ This version does not depend on the concept_embedding template.
 
 import numpy as np
 from typing import Dict, List, Any
+import hashlib
+import logging
+import traceback
 
 class SimpleEmbeddingManager:
     """Simplified version of the embedding manager for the dashboard."""
@@ -47,9 +50,6 @@ class SimpleEmbeddingManager:
                 
             related_terms.append(target_name)
             related_terms.append(rel_type)
-        
-        # Use hash of ID as seed to generate a pseudo-random but deterministic embedding
-        import hashlib
         
         # Create a string with the concept information
         concept_text = f"{concept_id}|{label}|{description}|{concept_type}"
@@ -152,7 +152,6 @@ class SimpleEmbeddingManager:
         Returns:
             List of semantic relationships
         """
-        import logging
         logger = logging.getLogger("embedding_manager")
         
         # Check if we have concepts to compare
@@ -174,7 +173,6 @@ class SimpleEmbeddingManager:
             logger.info(f"Found {len(related_concepts)} related concepts")
         except Exception as e:
             logger.error(f"Error finding related concepts: {str(e)}")
-            import traceback
             logger.error(traceback.format_exc())
             related_concepts = []
         

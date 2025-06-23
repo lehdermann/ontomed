@@ -4,6 +4,7 @@ Ontology Concept Manager for integration with spaCy.
 
 import logging
 import time
+import traceback
 from typing import List, Dict, Any, Optional
 import spacy
 from spacy.pipeline import EntityRuler
@@ -88,7 +89,6 @@ class OntologyConceptManager:
             return True
         except Exception as e:
             logger.error(f"Error initializing ontology concept manager: {str(e)}")
-            import traceback
             logger.error(traceback.format_exc())
             return False
     

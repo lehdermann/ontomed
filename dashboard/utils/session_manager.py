@@ -7,9 +7,13 @@ from typing import Any, Optional, Tuple
 from utils.chat_controller import ChatController
 from utils.nlp.processor import NLPProcessor
 from utils.api_client import APIClient
+from utils.nlp.scoring_system import IntentScoringSystem
 from prompt.manager import PromptManager
 from llm.factory import LLMFactory
+from prompt.template_manager import TemplateManager
 import logging
+import os
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +25,6 @@ def get_scoring_system() -> 'IntentScoringSystem':
     """
     if 'scoring_system' not in st.session_state:
         logger.info("Initializing new IntentScoringSystem instance")
-        from utils.nlp.scoring_system import IntentScoringSystem
         st.session_state.scoring_system = IntentScoringSystem()
     else:
         logger.debug("Using existing IntentScoringSystem instance")
@@ -100,14 +103,10 @@ def get_template_manager() -> 'TemplateManager':
         logger.info("Marking templates_initialized as True since tm_templates_loaded is True")
     
     if 'template_manager' not in st.session_state:
-        # Specific import to avoid conflicts
-        import sys
-        import os
         # Add root path to sys.path to ensure correct import
         root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
         if root_path not in sys.path:
             sys.path.insert(0, root_path)
-        from prompt.template_manager import TemplateManager
         
         llm = LLMFactory.create_llm()
         

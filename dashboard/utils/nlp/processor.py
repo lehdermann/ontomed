@@ -12,6 +12,12 @@ from .models import Entity, Intent
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 
+from .entity_manager import EntityManager
+from .dependency_matcher import DependencyMatcherManager
+from .scoring_system import IntentScoringSystem
+from .ontology_concept_manager import OntologyConceptManager
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class ProcessedMessage:
@@ -27,13 +33,6 @@ class ProcessedMessage:
             self.entities = []
         if self.context is None:
             self.context = {}
-
-from .entity_manager import EntityManager
-from .dependency_matcher import DependencyMatcherManager
-from .scoring_system import IntentScoringSystem
-from .ontology_concept_manager import OntologyConceptManager
-
-logger = logging.getLogger(__name__)
 
 
 class NLPProcessor:
@@ -74,7 +73,6 @@ class NLPProcessor:
         
         # Initialize scoring_system if not provided
         if self.scoring_system is None:
-            from .scoring_system import IntentScoringSystem
             self.scoring_system = IntentScoringSystem(self.nlp)
             logger.warning("No scoring_system provided, created a new instance with spaCy model")
         elif hasattr(self.scoring_system, 'nlp') and self.scoring_system.nlp is None:

@@ -4,10 +4,12 @@ Integrates NLP processor, API client and context management.
 """
 
 import logging
+import traceback
 from typing import Dict, Any, List, Optional
 import streamlit as st
 import re
 import json
+import random
 from datetime import datetime
 
 from .nlp.processor import NLPProcessor
@@ -211,7 +213,6 @@ class ChatController:
             
         except Exception as e:
             self.logger.error(f"Error building intent-template mapping: {str(e)}")
-            import traceback
             self.logger.error(traceback.format_exc())
             return {}  # Return empty dictionary in case of error
     
@@ -339,7 +340,6 @@ class ChatController:
         
         except Exception as e:
             self.logger.error(f"Error updating NLP system with intent info: {str(e)}")
-            import traceback
             self.logger.error(traceback.format_exc())  # Return default mapping in case of error
     
     def _update_intent_keywords_direct(self, scoring_system, intent_name: str, keywords: List[str]) -> None:
@@ -474,7 +474,6 @@ class ChatController:
                     
         except Exception as e:
             self.logger.error(f"Erro em _update_patterns_in_entity_manager: {str(e)}")
-            import traceback
             self.logger.error(traceback.format_exc())
     
     def process_message(self, message: str) -> Dict[str, Any]:
@@ -2243,7 +2242,6 @@ class ChatController:
             "Tente reformular sua pergunta ou digite 'ajuda' para ver os comandos disponíveis.",
             "Se estiver procurando informações sobre um termo médico, tente 'O que é [termo]?'"
         ]
-        import random
         suggestion = random.choice(suggestions)
         
         return {

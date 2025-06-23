@@ -207,7 +207,6 @@ class APIClient:
         Returns:
             List of concepts
         """
-        import logging
         logger = logging.getLogger(__name__)
         
         params = filters or {}

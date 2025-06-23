@@ -528,8 +528,6 @@ class IntentScoringSystem:
         # Apply softmax normalization with temperature to smooth out the scores
         # and prevent a single evidence from dominating the system
         if scores:
-            import math
-            
             # Save original scores for logging
             original_scores = scores.copy()
             logger.info(f"Original scores before normalization: {original_scores}")
@@ -929,8 +927,6 @@ class IntentScoringSystem:
         # Apply softmax normalization with temperature to smooth out the scores
         # and prevent a single evidence from dominating the system
         if scores:
-            import math
-            
             # Save original scores for logging
             original_scores = scores.copy()
             logger.info(f"Original scores before normalization: {original_scores}")
