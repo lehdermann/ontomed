@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 
 # Add the project root to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -9,35 +10,87 @@ import pandas as pd
 import json
 import requests
 from utils.api_client import APIClient
-from prompt.template_manager import TemplateManager
+from prompt.manager import PromptManager as TemplateManager
 from prompt.category_manager import CategoryManager
 from prompt.suggestion_manager import SuggestionManager
 from prompt.editor_manager import EditorManager
 from prompt.dependency_manager import DependencyManager
 from prompt.export_manager import ExportManager
 from llm.factory import LLMFactory
+from components.shared_layout_new import setup_shared_layout_content, render_chat_ui, check_rerun, create_three_column_layout
+from components.chat.chat_ui_new import ChatUI
 
-# Initialize API client
-api_client = APIClient()
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Initialize managers
-llm = LLMFactory.create_llm()
-template_manager = TemplateManager(llm)
-category_manager = CategoryManager(template_manager)
-suggestion_manager = SuggestionManager(llm)
-editor_manager = EditorManager(llm, template_manager)
-dependency_manager = DependencyManager(llm)
-export_manager = ExportManager(llm, template_manager)
+# Setup shared layout
+page = setup_shared_layout_content()
+
+# Handle chat messages
+def handle_user_message(message: str) -> None:
+    """Handle user message in the chat."""
+    try:
+        # Usar o cliente API global
+        global api_client
+        
+        # Processar a mensagem usando o método process_chat_message do APIClient
+        logger.info(f"Processando mensagem do usuário: {message}")
+        chat_response = api_client.process_chat_message(message)
+        
+        # Extrair a resposta e a intenção identificada
+        response_text = chat_response.get('response', "Desculpe, não consegui processar sua mensagem.")
+        intent = chat_response.get('intent', "outro")
+        
+        # Registrar a intenção identificada para fins de depuração
+        logger.info(f"Intenção identificada: {intent}")
+        
+        # Adicionar a resposta do bot ao histórico de chat
+        if 'chat_messages' in st.session_state:
+            st.session_state.chat_messages.append({"is_user": False, "content": response_text})
+        
+    except Exception as e:
+        error_msg = f"Desculpe, ocorreu um erro ao processar sua mensagem: {str(e)}"
+        if 'chat_messages' in st.session_state:
+            st.session_state.chat_messages.append({"is_user": False, "content": error_msg})
+        logger.error(f"Error handling user message: {e}", exc_info=True)
+
+# Inicialização controlada dos componentes NLP
+# Seguindo o mesmo padrão usado em Home.py para inicialização dos templates
+if 'nlp_initialized' not in st.session_state:
+    try:
+        # Importar APIClient diretamente
+        api_client = APIClient()
+        logger.info("APIClient inicializado diretamente")
+        
+        # Armazenar no estado da sessão para uso futuro
+        st.session_state.api_client = api_client
+        
+        # Marcar como inicializado
+        st.session_state.nlp_initialized = True
+    except Exception as e:
+        logger.error(f"Erro ao inicializar APIClient: {e}")
+        st.sidebar.error(f"Erro ao inicializar APIClient: {e}")
+else:
+    # Usar a instância existente
+    logger.debug("Usando APIClient já inicializado")
+    api_client = st.session_state.api_client
+
+# Initialize chat UI (must be after all other Streamlit elements)
+# Moved to main() function
+
+# Initialize LLM (moved to main)
+llm = None
+
+# Managers (initialized in main)
+template_manager = None
+category_manager = None
+suggestion_manager = None
+editor_manager = None
+dependency_manager = None
+export_manager = None
 
 # Page configuration
-st.set_page_config(
-    page_title="Manage Templates",
-    page_icon="📋",
-    layout="wide"
-)
-
-# Sidebar
-st.sidebar.title("Actions")
 
 # Debug log
 import logging
@@ -86,12 +139,126 @@ if st.sidebar.button("View Ontology Data"):
         st.error(f"Error: {str(e)}")
 
 
+# Custom CSS for templates page
+st.markdown("""
+    <style>
+        /* Main container */
+        .main .block-container {
+            max-width: 95% !important;
+            padding-top: 2rem !important;
+            padding-bottom: 2rem !important;
+        }
+        
+        /* Template cards */
+        .stContainer {
+            border-radius: 10px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+            padding: 1.5rem !important;
+            margin-bottom: 1.5rem !important;
+            background: white !important;
+            border: 1px solid #e0e0e0 !important;
+            transition: transform 0.2s, box-shadow 0.2s !important;
+        }
+        
+        .stContainer:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        }
+        
+        /* Buttons */
+        .stButton > button {
+            width: 100% !important;
+            margin: 0.25rem 0 !important;
+            transition: all 0.2s !important;
+        }
+        
+        .stButton > button:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+        }
+        
+        /* Tabs */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 0.5rem !important;
+        }
+        
+        .stTabs [data-baseweb="tab"] {
+            flex: 1 !important;
+            text-align: center !important;
+            padding: 0.5rem 1rem !important;
+            border-radius: 8px !important;
+            background: #f0f2f6 !important;
+            border: 1px solid #e0e0e0 !important;
+            margin: 0 !important;
+        }
+        
+        .stTabs [aria-selected="true"] {
+            background: #4a86e8 !important;
+            color: white !important;
+            border-color: #4a86e8 !important;
+        }
+        
+        /* Forms */
+        .stTextInput > div > div > input,
+        .stTextArea > div > div > textarea,
+        .stSelectbox > div > div > div {
+            border-radius: 8px !important;
+            border: 1px solid #e0e0e0 !important;
+            padding: 0.5rem 1rem !important;
+        }
+        
+        /* Expandable sections */
+        .stExpander > div > div {
+            border-radius: 8px !important;
+            border: 1px solid #e0e0e0 !important;
+            margin-bottom: 1rem !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # Main page
 def main():
     """Main function of the template management page."""
+    global llm, template_manager, category_manager, suggestion_manager, editor_manager, dependency_manager, export_manager
     
-    # Page title
-    st.title("Template Management")
+    # Initialize managers if not already initialized
+    if template_manager is None:
+        # Initialize LLM
+        llm = LLMFactory.create_llm()
+        
+        # Verificar se os templates já foram inicializados em Home.py
+        if 'templates_initialized' not in st.session_state:
+            try:
+                import sys
+                # Add the root directory to the path to import the prompt module
+                sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+                from prompt.initialize import initialize
+                initialize()
+                logging.info("Templates initialized successfully")
+                st.session_state.templates_initialized = True
+            except Exception as e:
+                logging.error(f"Error initializing templates: {e}")
+        else:
+            logging.debug("Templates already initialized")
+            
+        # Criar instância do TemplateManager diretamente
+        from prompt.template_manager import TemplateManager
+        template_manager = TemplateManager(llm, skip_intent_analysis=True)
+        logging.info("TemplateManager criado com skip_intent_analysis=True")
+        
+        # Initialize other managers with the shared template manager
+        category_manager = CategoryManager(template_manager)
+        suggestion_manager = SuggestionManager(llm)
+        editor_manager = EditorManager(llm, template_manager)
+        dependency_manager = DependencyManager(llm)
+        export_manager = ExportManager(llm, template_manager)
+    
+    # Page title with icon
+    st.markdown("""
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem;">
+            <h1 style="margin: 0;">📋 Template Management</h1>
+        </div>
+    """, unsafe_allow_html=True)
     
     # Sidebar - Filters
     st.sidebar.header("Filters")
@@ -164,10 +331,18 @@ def main():
                 # Template name
                 template_name = st.text_input("Template Name")
                 
+                # Mapping between internal types and display types
+                type_mapping = {
+                    "text": "Texto",
+                    "structured": "Estruturado",
+                    "embedding": "Embedding"
+                }
+                reverse_mapping = {v: k for k, v in type_mapping.items()}
+                
                 # Template type
                 template_type = st.selectbox(
-                    "Template Type",
-                    ["Text", "Structured", "Embedding"]
+                    "Tipo de Template",
+                    ["Texto", "Estruturado", "Embedding"]
                 )
                 
                 # Category
@@ -222,9 +397,12 @@ def main():
                         st.error("Template content is required")
                     else:
                         # Criar template
+                        # Converter o tipo de exibição para o tipo interno
+                        internal_type = reverse_mapping.get(template_type, "text")  # Fallback para "text" se não encontrar
+                        
                         new_template = {
                             "name": template_name,
-                            "type": template_type,
+                            "type": internal_type,
                             "category": category["id"],
                             "content": template_content,
                             "variables": variables,
@@ -245,7 +423,13 @@ def main():
         st.subheader("Existing Templates")
         
         # Obter templates
+        logger.info("Loading templates...")
         templates = template_manager.get_templates()
+        logger.info(f"Found {len(templates)} templates")
+        
+        # Log templates for debugging
+        for i, t in enumerate(templates):
+            logger.info(f"Template {i+1}: {t.get('name', 'Unnamed')} (ID: {t.get('id', 'No ID')})")
         
         # Apply filters
         if filter_type != "All":
@@ -318,17 +502,28 @@ def main():
                 with st.form("edit_template_form"):
                     st.subheader(f"Editar Template: {template['name']}")
                     
-                    # Nome do template
+                    # Template name
                     template_name = st.text_input("Nome do Template", value=template["name"])
                     
-                    # Tipo de template
+                    # Mapping between internal types and display types
+                    type_mapping = {
+                        "text": "Texto",
+                        "structured": "Estruturado",
+                        "embedding": "Embedding"
+                    }
+                    reverse_mapping = {v: k for k, v in type_mapping.items()}
+                    
+                    # Get display type from internal type
+                    display_type = type_mapping.get(template["type"], "Texto")  # Fallback para "Texto" se não encontrar
+                    
+                    # Template type
                     template_type = st.selectbox(
                         "Tipo de Template",
                         ["Texto", "Estruturado", "Embedding"],
-                        index=["Texto", "Estruturado", "Embedding"].index(template["type"])
+                        index=["Texto", "Estruturado", "Embedding"].index(display_type)
                     )
                     
-                    # Categoria
+                    # Category
                     categories = category_manager.get_categories()
                     category_index = 0
                     for i, cat in enumerate(categories):
@@ -343,7 +538,7 @@ def main():
                         format_func=lambda x: x["name"]
                     )
                     
-                    # Conteúdo do template
+                    # Template content
                     template_content = st.text_area(
                         "Conteúdo do Template",
                         value=template["content"],
@@ -351,12 +546,12 @@ def main():
                         help="Use variáveis no formato {{variavel}}"
                     )
                     
-                    # Variáveis do template
+                    # Template variables
                     st.write("**Variáveis do Template**")
                     variables = []
                     existing_vars = template.get("variables", [])
                     
-                    for i in range(5):  # Suporte para até 5 variáveis
+                    for i in range(5):  # Support for up to 5 variables
                         var_value = existing_vars[i] if i < len(existing_vars) else ""
                         var_name = st.text_input(
                             f"Variável {i+1}",
@@ -366,37 +561,40 @@ def main():
                         if var_name:
                             variables.append(var_name)
                     
-                    # Descrição
+                    # Template description
                     template_description = st.text_area(
                         "Descrição",
                         value=template.get("description", ""),
                         height=100
                     )
                     
-                    # Botões de ação
+                    # Action buttons
                     col1, col2 = st.columns(2)
                     with col1:
                         cancel = st.form_submit_button("Cancelar")
                     with col2:
                         submit = st.form_submit_button("Salvar")
                     
-                    # Processar ações
+                    # Process actions
                     if cancel:
                         st.session_state.edit_template = None
                         st.rerun()
                     
                     if submit:
-                        # Validar campos obrigatórios
+                        # Validate mandatory fields
                         if not template_name:
                             st.error("Nome do template é obrigatório")
                         elif not template_content:
                             st.error("Conteúdo do template é obrigatório")
                         else:
-                            # Atualizar template
+                            # Update template
+                            # Convert display type back to internal type
+                            internal_type = reverse_mapping.get(template_type, "text")  # Fallback para "text" se não encontrar
+                            
                             updated_template = {
                                 "id": template_id,
                                 "name": template_name,
-                                "type": template_type,
+                                "type": internal_type,
                                 "category": category["id"],
                                 "content": template_content,
                                 "variables": variables,
@@ -404,7 +602,7 @@ def main():
                                 "status": template["status"]
                             }
                             
-                            # Salvar template
+                            # Save template
                             try:
                                 template_manager.update_template(updated_template)
                                 st.success(f"Template '{template_name}' atualizado com sucesso!")
@@ -413,7 +611,7 @@ def main():
                             except Exception as e:
                                 st.error(f"Erro ao atualizar template: {str(e)}")
         
-        # Modal de exclusão
+        # Execution Modal
         if st.session_state.get("delete_template"):
             template_id = st.session_state.delete_template
             template = template_manager.get_template(template_id)
@@ -430,7 +628,7 @@ def main():
                 with col2:
                     if st.button("Confirmar Exclusão"):
                         try:
-                            # Verificar dependências
+                            # Check dependencies
                             dependencies = dependency_manager.check_template_dependencies(template_id)
                             
                             if dependencies:
@@ -438,7 +636,7 @@ def main():
                                 for dep in dependencies:
                                     st.markdown(f"- {dep['type']}: {dep['name']}")
                             else:
-                                # Excluir template
+                                # Delete template
                                 template_manager.delete_template(template_id)
                                 st.success(f"Template '{template['name']}' excluído com sucesso!")
                                 st.session_state.delete_template = None
@@ -446,11 +644,11 @@ def main():
                         except Exception as e:
                             st.error(f"Erro ao excluir template: {str(e)}")
         
-        # Exportar templates
+        # Export templates
         st.subheader("Exportar Templates")
         
         with st.expander("Opções de Exportação"):
-            # Selecionar templates para exportação
+            # Select template to export
             st.write("**Selecione os templates para exportação:**")
             
             selected_templates = []
@@ -458,32 +656,32 @@ def main():
                 if st.checkbox(template["name"], key=f"export_{template['id']}"):
                     selected_templates.append(template["id"])
             
-            # Formato de exportação
+            # Export format
             export_format = st.selectbox(
                 "Formato de Exportação",
                 ["JSON", "YAML", "Python"]
             )
             
-            # Botão de exportação
+            # Export button
             if st.button("Exportar Templates"):
                 if not selected_templates:
                     st.error("Selecione pelo menos um template para exportação")
                 else:
                     try:
-                        # Exportar templates
+                        # Export templates
                         export_data = export_manager.export_templates(
                             selected_templates,
                             export_format.lower()
                         )
                         
-                        # Determinar extensão do arquivo
+                        # Determine file extension
                         file_ext = {
                             "json": "json",
                             "yaml": "yaml",
                             "python": "py"
                         }.get(export_format.lower(), "txt")
                         
-                        # Oferecer download
+                        # Offer download
                         st.download_button(
                             label=f"Download ({export_format})",
                             data=export_data,
@@ -493,17 +691,11 @@ def main():
                     except Exception as e:
                         st.error(f"Erro ao exportar templates: {str(e)}")
 
-
-# Inicializar estado da sessão
-if "new_template" not in st.session_state:
-    st.session_state.new_template = False
-
-if "edit_template" not in st.session_state:
-    st.session_state.edit_template = None
-
-if "delete_template" not in st.session_state:
-    st.session_state.delete_template = None
-
+    # Render chat UI (must be after all other Streamlit elements)
+    render_chat_ui()
+    
+    # Check if we need to rerun the app
+    check_rerun()
 
 if __name__ == "__main__":
     main()

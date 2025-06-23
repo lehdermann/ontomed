@@ -22,7 +22,7 @@ class SimpleEmbeddingManager:
         Returns:
             List of floats representing the embedding
         """
-        # Extrair informações do conceito
+        # Extract concept information
         concept_id = concept.get("id", "")
         label = concept.get("label", "")
         description = concept.get("description", "")

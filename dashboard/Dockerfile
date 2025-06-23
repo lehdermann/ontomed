@@ -9,15 +9,20 @@ RUN apt-get update && apt-get install -y \
 # Criar diretório de trabalho
 WORKDIR /app
 
+# Set environment variables
+ENV PYTHONPATH="${PYTHONPATH}:/app"
+
 # Copiar arquivos necessários
 COPY requirements.txt .
 COPY pages/ ./pages/
+COPY components/ ./components/
 COPY utils/ ./utils/
 COPY Home.py .
 COPY prompt/ ./prompt/
+COPY .streamlit/ ./.streamlit/
 
 # Instalar dependências
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 # Expor porta
 EXPOSE 8501

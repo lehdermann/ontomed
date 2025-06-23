@@ -16,9 +16,12 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 import streamlit as st
 import networkx as nx
 from pyvis.network import Network
-# Importar módulos do diretório utils
 import sys
 import os
+
+# Import shared layout components
+from components.shared_layout_new import setup_shared_layout_content, render_chat_ui, create_three_column_layout, check_rerun
+from components.chat.chat_ui_new import ChatUI
 
 # Add the dashboard directory to the path to allow imports
 dashboard_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -34,15 +37,42 @@ api_client = APIClient()
 # Initialize simplified embedding manager
 embedding_manager = SimpleEmbeddingManager()
 
-# Page configuration
-st.set_page_config(
-    page_title="Graph Visualizer",
-    page_icon="📊",
-    layout="wide"
-)
+# Function to handle chat messages
+def handle_user_message(message: str) -> None:
+    """Handle user message in the chat.
+    
+    Args:
+        message: The message from the user
+    """
+    try:
+        # Usar o cliente API global
+        global api_client
+        
+        # Processar a mensagem usando o método process_chat_message do APIClient
+        logger.info(f"Processando mensagem do usuário: {message}")
+        chat_response = api_client.process_chat_message(message)
+        
+        # Extrair a resposta e a intenção identificada
+        response_text = chat_response.get('response', "Desculpe, não consegui processar sua mensagem.")
+        intent = chat_response.get('intent', "outro")
+        
+        # Registrar a intenção identificada para fins de depuração
+        logger.info(f"Intenção identificada: {intent}")
+        
+        # Adicionar a resposta do bot ao histórico de chat
+        if 'chat_messages' in st.session_state:
+            st.session_state.chat_messages.append({"is_user": False, "content": response_text})
+        
+    except Exception as e:
+        error_msg = f"Desculpe, ocorreu um erro ao processar sua mensagem: {str(e)}"
+        if 'chat_messages' in st.session_state:
+            st.session_state.chat_messages.append({"is_user": False, "content": error_msg})
+        logger.error(f"Error handling user message: {e}", exc_info=True)
 
 def main():
     """Main function of the graph visualization page."""
+    # Setup shared layout
+    page = setup_shared_layout_content()
     
     # Page title
     st.title("Graph Visualizer")
@@ -879,6 +909,12 @@ def main():
                             st.write(f"Target ID: {target_concept['id']}")
         else:
             st.write("No semantic relationships found.")
+            
+    # Render chat UI in the right panel
+    render_chat_ui()
+    
+    # Check if we need to rerun the app
+    check_rerun()
 
 if __name__ == "__main__":
     main()

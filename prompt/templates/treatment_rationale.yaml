@@ -1,60 +1,79 @@
 name: Treatment Rationale
 description: Template for generating explanations of treatment recommendations
 type: text
-template: |
-  You are a medical assistant providing a rationale for a recommended treatment plan.
-  
+parameters:
+- name: condition
+  type: string
+  description: The medical condition being treated
+  required: true
+- name: treatment
+  type: string
+  description: The recommended treatment approach
+  required: true
+- name: medical_concepts
+  type: string
+  description: Relevant medical knowledge about the condition and treatment
+  required: true
+- name: patient_data
+  type: object
+  description: Relevant patient information (age, comorbidities, etc.)
+  required: true
+examples:
+- condition: Type 2 Diabetes
+  treatment: Metformin plus lifestyle modifications
+  medical_concepts: '- Metformin reduces glucose production in the liver
+
+    - First-line medication for Type 2 Diabetes
+
+    - Lifestyle modifications include diet changes, exercise, weight management
+
+    - Combined approach more effective than medication alone
+
+    '
+  patient_data:
+    age: 52
+    gender: female
+    comorbidities:
+    - Mild hypertension
+    - Overweight (BMI 31)
+    lab_values:
+      HbA1c: 7.8%
+      Fasting glucose: 165 mg/dL
+content: 'You are a medical assistant providing a rationale for a recommended treatment
+  plan.
+
+
   Patient condition: {condition}
+
   Recommended treatment: {treatment}
-  
+
+
   Medical context:
+
   {medical_concepts}
-  
+
+
   Patient information:
+
   {patient_data}
-  
-  Please provide a clear explanation of why this treatment approach is recommended for this patient.
+
+
+  Please provide a clear explanation of why this treatment approach is recommended
+  for this patient.
+
   Your explanation should cover:
+
   1. How the treatment addresses the underlying condition
+
   2. Expected benefits and timeframe
+
   3. Potential side effects or risks
+
   4. Why this approach was chosen over alternatives
-  5. Factors from the patient's specific situation that influenced this recommendation
-  
+
+  5. Factors from the patient''s specific situation that influenced this recommendation
+
+
   Your explanation should be evidence-based but accessible to a non-medical audience.
 
-parameters:
-  - name: condition
-    type: string
-    description: The medical condition being treated
-    required: true
-  - name: treatment
-    type: string
-    description: The recommended treatment approach
-    required: true
-  - name: medical_concepts
-    type: string
-    description: Relevant medical knowledge about the condition and treatment
-    required: true
-  - name: patient_data
-    type: object
-    description: Relevant patient information (age, comorbidities, etc.)
-    required: true
-
-examples:
-  - condition: Type 2 Diabetes
-    treatment: Metformin plus lifestyle modifications
-    medical_concepts: |
-      - Metformin reduces glucose production in the liver
-      - First-line medication for Type 2 Diabetes
-      - Lifestyle modifications include diet changes, exercise, weight management
-      - Combined approach more effective than medication alone
-    patient_data:
-      age: 52
-      gender: female
-      comorbidities:
-        - Mild hypertension
-        - Overweight (BMI 31)
-      lab_values:
-        HbA1c: 7.8%
-        Fasting glucose: 165 mg/dL
+  '
