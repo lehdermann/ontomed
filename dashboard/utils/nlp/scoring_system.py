@@ -1157,13 +1157,22 @@ class IntentScoringSystem:
     
     def normalize_scores(self, scores: Dict[str, float]) -> Dict[str, float]:
         """
-        Normalizes the scores to values between 0 and 1.
+        Normalizes the scores to values between 0 and 1 using Min-Max Scaling.
+        
+        Min-Max Scaling formula: (x - min) / (max - min)
+        
+        In this implementation, we assume min=0 for all scores, so the formula
+        simplifies to: x / max
+        
+        Special cases:
+        - If all scores are 0, max is set to 1.0 to avoid division by zero
+        - If max is 0, all scores will be set to 0.0
         
         Args:
             scores: Dictionary with intents and their scores
             
         Returns:
-            Dict[str, float]: Dictionary with intents and normalized scores
+            Dict[str, float]: Dictionary with intents and normalized scores between 0 and 1
         """
         logger.info(f"Starting score normalization: {scores}")
         
