@@ -32,24 +32,26 @@ class SimpleEmbeddingManager:
         concept_type = concept.get("type", "")
         
         # Extract additional information that might be in relationships
-        relationships = concept.get("relationships", [])
+        relationships = concept.get("relationships")
         related_terms = []
         
         # Extract related terms from relationships to enrich the embedding
-        for rel in relationships:
-            rel_type = rel.get("type", "")
-            target = rel.get("target", "")
-            
-            # Extract the target name (part after # or /)
-            if "#" in target:
-                target_name = target.split("#")[-1]
-            elif "/" in target:
-                target_name = target.split("/")[-1]
-            else:
-                target_name = target
+        if relationships is not None:
+            for rel in relationships:
+                rel_type = rel.get("type", "")
+                target = rel.get("target", "")
                 
-            related_terms.append(target_name)
-            related_terms.append(rel_type)
+                # Extract the target name (part after # or /)
+                if target and isinstance(target, str):
+                    if "#" in target:
+                        target_name = target.split("#")[-1]
+                    elif "/" in target:
+                        target_name = target.split("/")[-1]
+                    else:
+                        target_name = target
+                        
+                    related_terms.append(target_name)
+                    related_terms.append(rel_type)
         
         # Create a string with the concept information
         concept_text = f"{concept_id}|{label}|{description}|{concept_type}"

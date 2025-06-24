@@ -21,3 +21,6 @@ jsonschema>=4.0.0
 # Development Tools
 pytest>=7.0.0
 pylint>=2.15.0
+
+# Dashboard/Visualization
+streamlit>=1.29.0
