@@ -75,11 +75,11 @@ def handle_user_message(message: str) -> None:
             logger.info("Bot response added to chat history")
         
     except Exception as e:
-        error_msg = f"Desculpe, ocorreu um erro ao processar sua mensagem: {str(e)}"
+        error_msg = f"Sorry, an error occurred while processing your message: {str(e)}"
         if 'chat_messages' in st.session_state:
             st.session_state.chat_messages.append({"is_user": False, "content": error_msg})
         logger.error(f"Error handling user message: {e}", exc_info=True)
-        logger.error(f"Erro ao processar mensagem: {e}")
+        logger.error(f"Error processing message: {e}")
     
     # No need to hide typing indicator with new implementation
 
@@ -128,13 +128,13 @@ def main():
                 concepts_cache_valid = True
                 
         # Button to force update of all caches
-        if st.button("Atualizar todos os dados", key="refresh_all"):
+        if st.button("Update all data", key="refresh_all"):
             # Clear all caches
             st.session_state.concepts_cache = None
             st.session_state.concept_details_cache = {}
             st.session_state.relationships_cache = {}
             concepts_cache_valid = False
-            st.info("Atualizando todos os dados...")
+            st.info("Updating all data...")
         
         # Load concepts from API or cache
         if concepts_cache_valid:
@@ -246,23 +246,23 @@ def main():
                     if current_time - st.session_state.concept_details_timestamp[selected_concept_id] < cache_expiration:
                         concept_cache_valid = True
                 
-                # Botão para forçar atualização do cache de detalhes do conceito
-                if st.button("Atualizar detalhes do conceito", key="refresh_concept_details"):
+                # Button to force update of the cache of concept details
+                if st.button("Update concept details", key="refresh_concept_details"):
                     concept_cache_valid = False
-                    st.info("Atualizando detalhes do conceito...")
+                    st.info("Updating concept details...")
                 
-                # Obter detalhes do conceito do cache ou da API
+                # Get concept details from cache or API
                 if concept_cache_valid:
                     selected_concept = st.session_state.concept_details_cache[selected_concept_id]
-                    st.success("Detalhes do conceito carregados do cache")
+                    st.success("Concept details loaded from cache")
                 else:
                     # Always get concept details from the API to ensure we have all information
-                    with st.spinner("Carregando detalhes do conceito da API..."):
+                    with st.spinner("Loading concept details from API..."):
                         try:
                             # Retrieve complete details of the concept from the API
                             selected_concept = api_client.get_concept(selected_concept_id)
                             if not selected_concept:
-                                st.error("Não foi possível carregar os detalhes do conceito")
+                                st.error("Unable to load concept details")
                                 return
                                 
                             # Update cache
@@ -298,8 +298,8 @@ def main():
                     
                     with col1:
                         st.write(f"**ID:** {concept_id}")
-                        st.write(f"**Nome:** {label}")
-                        st.write(f"**Tipo:** {concept_type or 'Não especificado'}")
+                        st.write(f"**Name:** {label}")
+                        st.write(f"**Type:** {concept_type or 'Not specified'}")
                     
                     with col2:
                         # Empty column for alignment
@@ -307,7 +307,7 @@ def main():
                     
                     # Description in full width below the columns
                     description = selected_concept.get('description', '')
-                    st.write(f"**Descrição:** {description if description else 'Nenhuma descrição disponível.'}")
+                    st.write(f"**Description:** {description if description else 'No description available.'}")
                     
                     # Add spacing
                     st.write("")
@@ -322,17 +322,17 @@ def main():
                             rel_cache_valid = True
                     
                     # Button to force update of the relationships cache
-                    if st.button("Atualizar relacionamentos", key="refresh_relationships"):
+                    if st.button("Update relationships", key="refresh_relationships"):
                         rel_cache_valid = False
-                        st.info("Atualizando relacionamentos...")
+                        st.info("Updating relationships...")
                     
                     # Load relationships from cache or API
                     if rel_cache_valid:
                         relationships = st.session_state.relationships_cache[selected_concept_id]
-                        st.success("Relacionamentos carregados do cache")
+                        st.success("Relationships loaded from cache")
                     else:
                         # Get relationships from API
-                        with st.spinner("Carregando relacionamentos da API..."):
+                        with st.spinner("Loading relationships from API..."):
                             try:
                                 # Get the concept data which already includes relationships
                                 concept_data = api_client.get_concept(selected_concept_id)
@@ -348,12 +348,12 @@ def main():
                                 st.session_state.relationships_cache[selected_concept_id] = relationships
                                 st.session_state.relationships_cache_timestamp[selected_concept_id] = time.time()
                             except Exception as e:
-                                st.error(f"Erro ao carregar relacionamentos: {str(e)}")
+                                st.error(f"Error loading relationships: {str(e)}")
                                 relationships = []
                     
                     # Display relationships section
-                    st.subheader("Relacionamentos")
-                    st.write(f"**Total de relacionamentos:** {len(relationships)}")
+                    st.subheader("Relationships")
+                    st.write(f"**Total of relationships:** {len(relationships)}")
                     
                     if relationships:
                         # Process relationships for display
@@ -408,61 +408,60 @@ def main():
                                     label = target
                             
                             rel_data.append({
-                                "Tipo": rel_type,
-                                "Alvo": label,
-                                "URI do Alvo": target
+                                "Type": rel_type,
+                                "Target": label,
+                                "Target URI": target
                             })
                         
                         # Display relationships as table
                         if rel_data:
                             st.dataframe(pd.DataFrame(rel_data), use_container_width=True)
                         else:
-                            st.info("Nenhum relacionamento encontrado.")
+                            st.info("No relationships found.")
                     else:
-                        st.info("Nenhum relacionamento encontrado para este conceito.")
+                        st.info("No relationships found for this concept.")
         
         # Filters
         st.sidebar.header("Filters")
         concept_type = st.sidebar.selectbox(
-            "Tipo de Conceito",
+            "Concept Type",
             ["All", "Diagnosis", "Treatment", "Symptom"]
         )
         
     with tab2:
         # Criar novo conceito
-        st.header("Criar Novo Conceito")
+        st.header("Create New Concept")
         
         with st.form("new_concept"):
-            concept_name = st.text_input("Nome do Conceito")
+            concept_name = st.text_input("Concept Name")
             concept_type = st.selectbox(
-                "Tipo de Conceito",
-                ["Diagnóstico", "Tratamento", "Sintoma"]
+                "Concept Type",
+                ["Diagnosis", "Treatment", "Symptom"]
             )
-            description = st.text_area("Descrição")
+            description = st.text_area("Description")
             
             if st.form_submit_button("Criar"):
                 # Aqui seria feita a chamada à API para criar o conceito
-                st.success("Conceito criado com sucesso!")
+                st.success("Concept created successfully!")
     
     with tab3:
         # Editar conceito
-        st.header("Editar Conceito")
+        st.header("Edit Concept")
         
         # Seleção do conceito para editar
         selected_concept = st.selectbox(
-            "Selecione o conceito para editar",
-            ["Conceito 1", "Conceito 2"]
+            "Select the concept to edit",
+            ["Concept 1", "Concept 2"]
         )
         
         if selected_concept:
             # Formulário de edição
             with st.form("edit_concept"):
-                concept_name = st.text_input("Nome do Conceito", value=selected_concept)
-                description = st.text_area("Descrição")
+                concept_name = st.text_input("Concept Name", value=selected_concept)
+                description = st.text_area("Description")
                 
-                if st.form_submit_button("Salvar"):
-                    # Aqui seria feita a chamada à API para atualizar o conceito
-                    st.success("Conceito atualizado com sucesso!")
+                if st.form_submit_button("Save"):
+                    st.success("Concept updated successfully!")
     
     # Render chat UI
     render_chat_ui()

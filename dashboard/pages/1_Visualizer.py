@@ -5,9 +5,13 @@ import logging
 
 # Configure detailed logging
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+
+# Suppress watchdog debug logs
+logging.getLogger('watchdog.observers.inotify_buffer').setLevel(logging.WARNING)
+
 logger = logging.getLogger("visualizer")
 
 # Add the project root to Python path
@@ -69,16 +73,32 @@ def handle_user_message(message: str) -> None:
             st.session_state.chat_messages.append({"is_user": False, "content": error_msg})
         logger.error(f"Error handling user message: {e}", exc_info=True)
 
+def on_concept_select(concept_map):
+    """Handle concept selection change."""
+    selected_display = st.session_state.get('selected_concept_display')
+    if selected_display and selected_display != "Select a Base Concept":
+        if selected_display in concept_map:
+            st.session_state.selected_concept_id = concept_map[selected_display]
+            logger.debug(f"Selected concept changed to: {selected_display} -> {st.session_state.selected_concept_id}")
+        else:
+            logger.error(f"Selected display '{selected_display}' not found in concept_map")
+    else:
+        st.session_state.selected_concept_id = None
+
 def main():
     """Main function of the graph visualization page."""
     # Setup shared layout
     page = setup_shared_layout_content()
     
+    # Initialize session state variables if they don't exist
+    if 'selected_concept_display' not in st.session_state:
+        st.session_state.selected_concept_display = "Select a Base Concept"
+    
     # Page title
     st.title("Graph Visualizer")
     
     # Debug mode
-    debug_mode = st.sidebar.checkbox("Debug Mode", value=True)
+    debug_mode = st.sidebar.checkbox("Debug Mode", value=False)
     
     # Sidebar - Filters
     st.sidebar.header("Filters")
@@ -122,12 +142,14 @@ def main():
                 # Implement type filter
                 pass
                 
-            # Create list of options for the selectbox
-            concept_options = []
+            # Create a mapping of display names to concept IDs
+            concept_map = {}
+            concept_options = ["Select a Base Concept"]
+            
             for c in all_concepts:
                 # Get the concept label, or extract from ID if the label is None
                 label = c.get('label')
-                if label is None or label == "":
+                if not label or label == "":
                     # Extract a readable name from the ID
                     if "#" in c['id']:
                         label = c['id'].split("#")[-1]
@@ -136,35 +158,55 @@ def main():
                     else:
                         label = c['id']
                 
-                concept_options.append(f"{label} ({c['id']})")
+                # Create a unique display name
+                display_name = f"{label} ({c['id']})"
+                concept_map[display_name] = c['id']
+                concept_options.append(display_name)
             
-            # Add empty option at the beginning
-            concept_options.insert(0, "Select a Base Concept")
+            # Store the concept map in session state if not already present
+            if 'concept_map' not in st.session_state:
+                st.session_state.concept_map = concept_map
             
-            # Dropdown to select the base concept (using session_state to persist the selection)
-            selected_concept_option = st.selectbox(
-                "Select a Base Concept", 
+            # Get the current selection from session state
+            current_selection = st.session_state.get('selected_concept_display', "Select a Base Concept")
+            
+            # Dropdown to select the base concept
+            selected_concept_display = st.selectbox(
+                "Select a Base Concept",
                 concept_options,
-                key="selected_concept_option"
+                index=concept_options.index(current_selection) if current_selection in concept_options else 0,
+                key="selected_concept_display",
+                on_change=lambda: on_concept_select(concept_map)
             )
             
-            # Log of the concept selection
-            logger.debug(f"Selected concept: {selected_concept_option}")
+            # Log the selection
+            logger.debug(f"Selected concept display: {selected_concept_display}")
+            
+            # Store the selected concept ID in session state
+            if selected_concept_display != "Select a Base Concept":
+                if selected_concept_display in concept_map:
+                    st.session_state.selected_concept_id = concept_map[selected_concept_display]
+                    logger.debug(f"Mapped to concept ID: {st.session_state.selected_concept_id}")
+                else:
+                    logger.error(f"Concept display '{selected_concept_display}' not found in concept_map")
+                    st.session_state.selected_concept_id = None
+            else:
+                st.session_state.selected_concept_id = None
             
             # Display debug information if the mode is activated
             if debug_mode:
                 st.write("**Debug information:**")
-                st.write(f"Selected concept: {selected_concept_option}")
+                st.write(f"Selected concept display: {selected_concept_display}")
+                st.write(f"Mapped concept ID: {st.session_state.get('selected_concept_id', 'None')}")
                 st.write(f"Number of loaded concepts: {len(all_concepts)}")
-                if selected_concept_option != "Select a Base Concept":
-                    selected_concept_id = selected_concept_option.split("(")[-1].split(")")[0]
-                    st.write(f"Selected concept ID: {selected_concept_id}")
+                
+                if st.session_state.get('selected_concept_id'):
                     # Check if the concept exists in the list
-                    concept_exists = any(c["id"] == selected_concept_id for c in all_concepts)
+                    concept_exists = any(c["id"] == st.session_state.selected_concept_id for c in all_concepts)
                     st.write(f"Concept exists in the list: {concept_exists}")
                     if concept_exists:
                         # Show the first fields of the concept
-                        concept = next((c for c in all_concepts if c["id"] == selected_concept_id), None)
+                        concept = next((c for c in all_concepts if c["id"] == st.session_state.selected_concept_id), None)
                         st.write("First fields of the concept:")
                         st.json({k: v for i, (k, v) in enumerate(concept.items()) if i < 5})
             
@@ -174,10 +216,10 @@ def main():
     
     # Process the concept selection
     selected_concept = None
-    if selected_concept_option != "Select a Base Concept":
+    if st.session_state.get('selected_concept_id'):
         try:
-            # Extract the concept ID from the selected option
-            selected_concept_id = selected_concept_option.split("(")[-1].split(")")[0]
+            # Get the concept ID from session state
+            selected_concept_id = st.session_state.selected_concept_id
             
             # Find the corresponding concept
             selected_concept = next((c for c in all_concepts if c["id"] == selected_concept_id), None)
@@ -185,10 +227,12 @@ def main():
             if not selected_concept:
                 st.error(f"Could not find concept with ID: {selected_concept_id}")
                 st.info("Try selecting another concept or reload the page.")
+                logger.error(f"Concept not found: {selected_concept_id}")
         except Exception as e:
-            st.error(f"Error processing concept selection: {str(e)}")
+            error_msg = f"Error processing concept selection: {str(e)}"
+            st.error(error_msg)
             st.info("Try selecting another concept or reload the page.")
-            import traceback
+            logger.error(f"{error_msg}\n{traceback.format_exc()}")
             st.expander("Error details").code(traceback.format_exc())
     
     if selected_concept:
@@ -281,10 +325,17 @@ def main():
         
         # Get relationships from the API
         try:
-            logger.debug(f"Getting relationships from the API for concept: {selected_concept['id']}")
+            with st.spinner("Loading concept details from API..."):
+                logger.debug(f"Getting relationships from the API for concept: {selected_concept['id']}")
             
-            # Get relationships for the selected concept
-            relationships = api_client.get_relationships(selected_concept["id"])
+                # Get relationships for the selected concept
+                selected_concept = api_client.get_concept(selected_concept["id"])
+            
+            if not selected_concept:
+                st.error("Unable to load concept details")
+                relationships = []
+            else:
+                relationships = selected_concept.get('relationships',[])
             
             logger.debug(f"Relationships obtained from the API: {len(relationships) if isinstance(relationships, list) else 'Not a list'}")
             if debug_mode:
@@ -868,47 +919,101 @@ def main():
             import traceback
             st.expander("Error details").code(traceback.format_exc())    
         
-        # Show semantic relationships
-        st.header("Semantic Relationships")
-        semantic_relationships_filtered = [r for r in all_relationships if r.get("type") == "SEMANTIC"]
-        if semantic_relationships_filtered:
-            for rel in semantic_relationships_filtered:
-                source_concept = next((c for c in all_concepts if c["id"] == rel["source"]), None)
-                target_concept = next((c for c in all_concepts if c["id"] == rel["target"]), None)
+        # Show relationships
+        st.header("Relationships")
+        
+        # Debug information
+        if debug_mode:
+            st.write("**Debug - All relationships:**")
+            st.write(f"Total relationships: {len(all_relationships) if all_relationships else 0}")
+            if all_relationships:
+                st.json(all_relationships[:2])  # Show first 2 relationships for debugging
+        
+        # Separate relationships by type
+        api_relationships = [r for r in all_relationships if r.get("is_api", False)]
+        semantic_relationships = [r for r in all_relationships if not r.get("is_api", True)]
+        
+        # Show API relationships
+        if api_relationships:
+            st.subheader("Ontology Relationships")
+            
+            # Prepare data for the table
+            table_data = []
+            for rel in api_relationships:
+                source_id = rel.get("source", "")
+                target_id = rel.get("target", "")
+                rel_type = rel.get("type", "")
+                rel_label = rel.get("label", "")
                 
-                if source_concept and target_concept:
-                    # Get concept labels, extracting from ID if null
-                    source_label = source_concept.get('label')
-                    if source_label is None or source_label == '':
-                        source_id = source_concept.get('id', '')
-                        if '#' in source_id:
-                            source_label = source_id.split('#')[-1]
-                        elif '/' in source_id:
-                            source_label = source_id.split('/')[-1]
-                        else:
-                            source_label = source_id
-                    
-                    target_label = target_concept.get('label')
-                    if target_label is None or target_label == '':
-                        target_id = target_concept.get('id', '')
-                        if '#' in target_id:
-                            target_label = target_id.split('#')[-1]
-                        elif '/' in target_id:
-                            target_label = target_id.split('/')[-1]
-                        else:
-                            target_label = target_id
-                    
-                    with st.expander(f"{source_label} → {target_label}"):
-                        st.write(f"**Similarity:** {rel['similarity']:.2f}")
-                        st.write(f"**Description:** {rel['description']}")
-                        
-                        # Add IDs for debugging
+                # Get labels
+                source_label = source_id.split('#')[-1] if '#' in source_id else source_id.split('/')[-1]
+                target_label = target_id.split('#')[-1] if '#' in target_id else target_id.split('/')[-1]
+                
+                table_data.append({
+                    "Source": source_label,
+                    "Relationship": rel_label or rel_type,
+                    "Target": target_label,
+                    "Type": rel_type,
+                    "_source_id": source_id,
+                    "_target_id": target_id
+                })
+            
+            # Display the table
+            if table_data:
+                # Create a DataFrame for better table display
+                import pandas as pd
+                
+                # Prepare display data (without internal IDs)
+                display_data = [{
+                    "Source": item["Source"],
+                    "Relationship": item["Relationship"],
+                    "Target": item["Target"],
+                    "Type": item["Type"]
+                } for item in table_data]
+                
+                # Add expandable details for each relationship
+                for item in table_data:
+                    with st.expander(f"🔍 {item['Source']} → {item['Target']}"):
+                        st.write(f"**Source ID:** `{item['_source_id']}`")
+                        st.write(f"**Target ID:** `{item['_target_id']}`")
                         if debug_mode:
-                            st.write("**Details:**")
-                            st.write(f"Source ID: {source_concept['id']}")
-                            st.write(f"Target ID: {target_concept['id']}")
-        else:
-            st.write("No semantic relationships found.")
+                            st.write("**Raw Data:**")
+                            st.json(next((r for r in api_relationships 
+                                      if r.get("source") == item['_source_id'] 
+                                      and r.get("target") == item['_target_id']), {}))
+        
+        # Show semantic relationships
+        if semantic_relationships:
+            st.subheader("Semantic Relationships")
+            for rel in semantic_relationships:
+                source_id = rel.get("source", "")
+                target_id = rel.get("target", "")
+                similarity = rel.get("similarity", 0)
+                description = rel.get("description", "")
+                
+                # Get labels
+                source_label = source_id.split('#')[-1] if '#' in source_id else source_id.split('/')[-1]
+                target_label = target_id.split('#')[-1] if '#' in target_id else target_id.split('/')[-1]
+                
+                with st.expander(f"{source_label} → {target_label} (Similarity: {similarity:.2f})"):
+                    st.write(f"**Similarity:** {similarity:.2f}")
+                    if description:
+                        st.write(f"**Description:** {description}")
+                    
+                    if debug_mode:
+                        st.write("**Details:**")
+                        st.write(f"Source: {source_id}")
+                        st.write(f"Target: {target_id}")
+                        st.json(rel)  # Show full relationship data for debugging
+        
+        # Show message if no relationships found
+        if not api_relationships and not semantic_relationships:
+            st.info("No relationships found for this concept.")
+            if debug_mode:
+                st.write("**Debug - All concepts in memory:**")
+                st.write(f"Total concepts: {len(all_concepts) if all_concepts else 0}")
+                if all_concepts:
+                    st.json([{"id": c.get('id'), "label": c.get('label')} for c in all_concepts[:5]])  # Show first 5 concepts for debugging
             
     # Render chat UI in the right panel
     render_chat_ui()
