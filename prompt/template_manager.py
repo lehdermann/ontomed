@@ -109,6 +109,32 @@ class TemplateManager:
                 return template
         return None
     
+    def get_embedding(self, template_id: str, concept: Dict[str, Any]) -> List[float]:
+        """Generates an embedding for a concept using a template.
+        
+        Args:
+            template_id: ID of the template to use
+            concept: Dictionary with concept information
+            
+        Returns:
+            List of floats representing the embedding
+        """
+        try:
+            # Get the template
+            template = self.get_template(template_id)
+            if not template:
+                raise ValueError(f"Template not found: {template_id}")
+                
+            # Generate text using the template and concept
+            generated_text = self.fill_template(template_id, concept)
+            
+            # Generate embedding using the LLM
+            return self.llm.generate_embeddings(generated_text)
+            
+        except Exception as e:
+            logger.error(f"Error generating embedding: {str(e)}")
+            raise
+    
     def get_templates(self) -> List[Dict[str, Any]]:
         """Gets all templates.
         
