@@ -731,11 +731,57 @@ def main():
                                     st.warning("The concept does not have a defined description, which may affect the quality of the embedding.")
                                 
                                 try:
-                                    # Generate embedding
-                                    response = template_manager.get_embedding(
-                                        selected_template["id"],
-                                        concept_data
-                                    )
+                                    # Create a proper template ID for the embedding
+                                    embedding_template_id = "concept_embedding_template"
+                                    
+                                    # Get the template content from selected_template["id"]
+                                    template_content = selected_template["id"]  # The template content is in the id field
+                                    logger.debug(f"Using template content: {template_content}")
+                                    
+                                    # Generate the text by filling the template
+                                    try:
+                                        # Create a temporary template for filling
+                                        filled_text = template_content.format(
+                                            concept_name=concept_data.get('concept_name', concept_data.get('name', '')),
+                                            concept_description=concept_data.get('concept_description', concept_data.get('description', '')),
+                                            concept_type=concept_data.get('concept_type', concept_data.get('type', '')),
+                                            concept_properties=concept_data.get('concept_properties', concept_data.get('properties', ''))
+                                        )
+                                        
+                                        # Import the SimpleEmbeddingManager using a relative import
+                                        import sys
+                                        from pathlib import Path
+                                        
+                                        # Get the dashboard directory path
+                                        dashboard_path = str(Path(__file__).parent.parent.absolute())
+                                        
+                                        # Add the dashboard directory to the Python path
+                                        if dashboard_path not in sys.path:
+                                            sys.path.append(dashboard_path)
+                                        
+                                        try:
+                                            # Now we can import using the relative path from the dashboard directory
+                                            from utils.embedding_manager import SimpleEmbeddingManager
+                                            
+                                            # Create an instance of the embedding manager
+                                            embedding_manager = SimpleEmbeddingManager()
+                                            
+                                            # Generate embedding using the concept data directly
+                                            response = embedding_manager._generate_simple_embedding(concept_data)
+                                        except ImportError as ie:
+                                            logger.error(f"Failed to import SimpleEmbeddingManager: {str(ie)}")
+                                            # Fallback to using the TemplateManager's get_embedding method
+                                            try:
+                                                response = template_manager.get_embedding("concept_embedding_template", concept_data)
+                                            except Exception as e:
+                                                logger.error(f"Failed to generate embedding with TemplateManager: {str(e)}")
+                                                # Last resort: return an empty list
+                                                response = []
+                                        
+                                        logger.debug(f"Generated embedding with {len(response)} dimensions")
+                                    except KeyError as e:
+                                        logger.error(f"Missing required field in concept data: {e}")
+                                        raise ValueError(f"Missing required field in concept data: {e}")
                                     
                                     # Check if the embedding was generated successfully
                                     if response and len(response) > 0:
