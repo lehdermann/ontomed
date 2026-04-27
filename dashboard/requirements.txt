@@ -9,7 +9,7 @@ openai>=1.12.0
 PyYAML>=5.4
 # Ajustado para compatibilidade com spaCy 3.7.0 e openai 1.12.0
 pydantic>=2.0.0,<3.0.0
-typing-extensions>=4.5.0
+typing-extensions>=4.15.0
 
 # Dependências para processamento de linguagem natural (NLP)
 spacy>=3.7.0
