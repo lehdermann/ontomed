@@ -19,7 +19,7 @@ pyvis>=0.3.1
 jsonschema>=4.0.0
 
 # Development Tools
-pytest>=7.0.0
+pytest>=9.0.3
 pylint>=2.15.0
 
 # Dashboard/Visualization
